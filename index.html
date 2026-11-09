@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#f3c48c" />
+    <title>Layangan Duel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;800&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="scene"></canvas>
+
+      <div id="hud" hidden>
+        <div class="top">
+          <div class="side me">
+            <div class="who"><span>Kamu</span><span class="pips" id="pips0"></span></div>
+            <div class="hp"><div id="hp0"></div></div>
+            <div class="reel"><span class="label">Benang ulur</span><div class="mini"><div id="slack0"></div></div></div>
+          </div>
+          <div class="center">
+            <div id="round" class="label">Ronde 1</div>
+            <div id="clock">1:30</div>
+            <div id="wind" class="label">Angin</div>
+          </div>
+          <div class="side foe">
+            <div class="who"><span class="pips" id="pips1"></span><span id="foe-name">PC</span></div>
+            <div class="hp"><div id="hp1"></div></div>
+            <div class="reel"><div class="mini"><div id="slack1"></div></div><span class="label">Benang ulur</span></div>
+          </div>
+        </div>
+
+        <div id="banner" class="banner"><b id="banner-main"></b><span id="banner-sub"></span></div>
+
+        <div id="gesek" class="gesek" hidden>
+          <b>Gesek!</b>
+          <span>Benangmu <em id="speed0">0</em> m/s · Lawan <em id="speed1">0</em> m/s</span>
+        </div>
+
+        <div class="hint" id="keys-hint">Tahan <kbd>Spasi</kbd>/klik = tarik · lepas = ulur · <kbd>A</kbd> <kbd>D</kbd> = belok</div>
+
+        <div class="touch" id="touch">
+          <div class="steer">
+            <button id="btn-left" aria-label="Belok kiri">⟲</button>
+            <button id="btn-right" aria-label="Belok kanan">⟳</button>
+          </div>
+          <button id="btn-pull" class="pull">Tarik</button>
+        </div>
+      </div>
+
+      <button id="mute" class="mute" aria-label="Suara nyala/mati">🔊</button>
+
+      <div id="menu" class="overlay">
+        <div class="panel">
+          <h1>Layangan Duel</h1>
+          <p class="tagline">Adu gelasan sore-sore di lapangan kampung.</p>
+
+          <label class="name-row">Nama kamu <input id="player-name" maxlength="16" autocomplete="off" spellcheck="false" /></label>
+
+          <div class="mode">
+            <div class="mode-head"><b>Lawan PC</b></div>
+            <div class="seg" id="levels">
+              <button data-level="mudah">Mudah</button>
+              <button data-level="sedang" class="on">Sedang</button>
+              <button data-level="jago">Jago</button>
+            </div>
+            <button id="play" class="btn">Main!</button>
+          </div>
+          <div class="mode">
+            <div class="mode-head"><b>Duel Teman</b></div>
+            <div class="row">
+              <button id="create-room" class="btn small">Buat room</button>
+              <form id="join-form" class="join">
+                <input id="join-code" maxlength="5" placeholder="Kode" autocapitalize="characters" autocomplete="off" spellcheck="false" aria-label="Kode room" />
+                <button type="submit" class="btn small alt">Gabung</button>
+              </form>
+            </div>
+          </div>
+          <div class="mode">
+            <div class="mode-head"><b>Lawan Acak</b></div>
+            <button id="find-match" class="btn small">Cari lawan</button>
+          </div>
+
+          <details class="how">
+            <summary>Cara main</summary>
+            <ul>
+              <li><b>Tahan</b> (Spasi, klik, atau tombol Tarik) = <b>tarik</b>: layangan melesat ke arah hidungnya.</li>
+              <li><b>Lepas</b> = <b>ulur</b>: layangan muter pelan dan turun, benang keluar dari gulungan.</li>
+              <li><b>A / D</b> atau ⟲ ⟳ buat belokin hidungnya.</li>
+              <li>Benang nyangkut? <b>Terus gerakin benangmu</b>: ulur, terus sentak tarik. Benang yang diam bakal putus duluan.</li>
+              <li>Jangan sampai layangan nyangkut di genteng. Menang 3 ronde = juara.</li>
+            </ul>
+          </details>
+        </div>
+      </div>
+
+      <div id="lobby" class="overlay" hidden>
+        <div class="panel">
+          <h2 id="lobby-title">Nyambung…</h2>
+          <p class="room-code" id="lobby-code" hidden></p>
+          <p class="tagline" id="lobby-sub"></p>
+          <div class="spinner" id="lobby-spin" hidden></div>
+          <button id="lobby-share" class="btn" hidden>Bagikan link</button>
+          <button id="lobby-bot" class="btn" hidden>Lawan PC dulu</button>
+          <button id="lobby-cancel" class="btn ghost">Batal</button>
+        </div>
+      </div>
+
+      <div id="result" class="overlay" hidden>
+        <div class="panel">
+          <h2 id="result-title">Juara kampung!</h2>
+          <p class="score" id="result-score">3 – 1</p>
+          <p class="tagline" id="result-sub"></p>
+          <button id="again" class="btn">Main lagi</button>
+          <button id="to-menu" class="btn ghost">Menu</button>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

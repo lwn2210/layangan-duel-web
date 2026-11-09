@@ -1,0 +1,23 @@
+# Cloudflare deploy: the game (dist/) and the multiplayer server in one Worker.
+#   npm run build && npm run cf:dev      local test on http://localhost:8787 (Node 22+)
+#   npm run cf:deploy                    needs `wrangler login` to your account
+name = "layangan-duel"
+main = "server/worker.ts"
+compatibility_date = "2025-10-01"
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "RoomObject"
+
+[[durable_objects.bindings]]
+name = "LOBBY"
+class_name = "LobbyObject"
+
+# SQLite-backed classes work on the free plan. They keep no storage here; all state is in memory.
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RoomObject", "LobbyObject"]
