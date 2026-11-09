@@ -66,6 +66,7 @@ export class App {
   private accumulator = 0
   private last = performance.now()
   private time = 0
+  private lastMatch: { won: boolean; s0: number; s1: number; foe: string; isOnline: boolean } | null = null
 
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true })
@@ -104,6 +105,7 @@ export class App {
     })
     $('play').addEventListener('click', () => this.startBot())
     $('again').addEventListener('click', () => this.again())
+    $('share-score').addEventListener('click', () => this.shareResult())
     $('to-menu').addEventListener('click', () => this.toMenu())
 
     const nameInput = $<HTMLInputElement>('player-name')
@@ -395,8 +397,15 @@ export class App {
         break
       case 'matchOver': {
         const s = this.session.state
-        const foe = this.session.kind === 'online' ? this.session.net.names[1] : 'lawan'
+        const foe = this.session.kind === 'online' ? this.session.net.names[1] : 'Lawan Bot'
         const won = e.winner === 0
+        this.lastMatch = {
+          won,
+          s0: s ? s.scores[0] : 0,
+          s1: s ? s.scores[1] : 0,
+          foe,
+          isOnline: this.session.kind === 'online',
+        }
         $('result-title').textContent = won ? 'Juara kampung!' : 'Kalah adu…'
         $('result-score').textContent = s ? `${s.scores[0]} – ${s.scores[1]}` : ''
         $('result-sub').textContent = won ? `Layangan ${foe} diambil anak-anak kampung.` : 'Besok beli gelasan yang lebih tajam.'
@@ -422,5 +431,37 @@ export class App {
     this.world.update(dt)
     this.camera.lookAt(Math.sin(this.time * 0.13) * 0.6, 22 + Math.sin(this.time * 0.21) * 0.4, PLANE_Z)
     this.renderer.render(this.scene, this.camera)
+  }
+
+  private shareResult(): void {
+    const m = this.lastMatch
+    if (!m) return
+    const status = m.won ? '🏆 JUARA ADU LAYANGAN KAMPUNG!' : '🪁 BENANG PUTUS / KALAH ADU'
+    const text =
+      `🪁 HASIL ADU GELASAN LAYANGAN DUEL 🪁\n` +
+      `⚔️ Lawan: ${m.foe}\n` +
+      `Status: ${status}\n` +
+      `📊 Skor Ronde: ${m.s0} – ${m.s1}\n` +
+      `🧵 Mode Duel: ${m.isOnline ? 'Online Mabar' : 'Lawan Bot'}\n\n` +
+      `Bisa adu gelasan di langit kampung tanpa putus?\n` +
+      `👉 https://lwn2210.github.io/mini-arcade/layangan-duel/`
+
+    const btn = $('share-score')
+    if (navigator.share) {
+      navigator.share({ title: 'Adu Gelasan Layangan Duel!', text, url: 'https://lwn2210.github.io/mini-arcade/layangan-duel/' }).catch(() => {})
+    } else if (navigator.clipboard) {
+      navigator.clipboard
+        .writeText(text)
+        .then(() => {
+          const orig = btn.textContent
+          btn.textContent = '✅ Hasil disalin ke clipboard!'
+          setTimeout(() => (btn.textContent = orig), 2500)
+        })
+        .catch(() => {
+          window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank')
+        })
+    } else {
+      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank')
+    }
   }
 }
