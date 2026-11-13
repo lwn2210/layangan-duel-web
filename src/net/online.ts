@@ -38,6 +38,7 @@ export class OnlineGame {
   private lastSent: Input | null = null
   private lastSentAt = 0
   private pinger = 0
+  private connectTimer = 0
   private ended = false
 
   constructor(
@@ -46,14 +47,21 @@ export class OnlineGame {
     private readonly onStatus: (status: OnlineStatus) => void,
   ) {
     this.ws = new WebSocket(serverUrl(`/ws/room/${code}`))
+    this.connectTimer = window.setTimeout(() => {
+      if (this.ended) return
+      this.close()
+      this.onStatus({ kind: 'error', reason: 'Server multiplayer nggak merespons. Coba lagi atau main lawan PC.' })
+    }, 10000)
     this.ws.addEventListener('open', () => {
+      if (this.ended) return
       this.send({ t: 'hello', v: PROTOCOL, name })
       this.pinger = window.setInterval(() => this.send({ t: 'ping', at: performance.now() }), 2000)
     })
     this.ws.addEventListener('message', (e) => this.receive(String(e.data)))
     this.ws.addEventListener('close', () => {
-      clearInterval(this.pinger)
-      if (!this.ended) this.onStatus({ kind: 'error', reason: 'Koneksi ke server putus.' })
+      if (this.ended) return
+      this.close()
+      this.onStatus({ kind: 'error', reason: 'Koneksi ke server putus.' })
     })
     onStatus({ kind: 'connecting' })
   }
@@ -63,6 +71,7 @@ export class OnlineGame {
   }
 
   private receive(raw: string): void {
+    if (this.ended) return
     let msg: ServerMsg
     try {
       msg = JSON.parse(raw) as ServerMsg
@@ -72,6 +81,7 @@ export class OnlineGame {
     const mirrored = this.slot === 1
     switch (msg.t) {
       case 'welcome':
+        clearTimeout(this.connectTimer)
         this.slot = msg.slot
         break
       case 'waiting':
@@ -91,15 +101,15 @@ export class OnlineGame {
         this.onStatus({ kind: 'rematch', from: msg.from === this.slot ? 'me' : 'them' })
         break
       case 'left':
-        this.ended = true
+        this.close()
         this.onStatus({ kind: 'left' })
         break
       case 'full':
-        this.ended = true
+        this.close()
         this.onStatus({ kind: 'full' })
         break
       case 'error':
-        this.ended = true
+        this.close()
         this.onStatus({ kind: 'error', reason: msg.reason })
         break
       case 'pong':
@@ -133,6 +143,7 @@ export class OnlineGame {
 
   close(): void {
     this.ended = true
+    clearTimeout(this.connectTimer)
     clearInterval(this.pinger)
     this.ws.close()
   }
@@ -142,30 +153,42 @@ export class OnlineGame {
 export class Matchmaker {
   private ws: WebSocket
   private done = false
+  private connectTimer = 0
 
   constructor(handlers: { queued: (waiting: number) => void; matched: (code: string) => void; failed: () => void }) {
     this.ws = new WebSocket(serverUrl('/ws/match'))
+    this.connectTimer = window.setTimeout(() => {
+      if (this.done) return
+      this.close()
+      handlers.failed()
+    }, 10000)
     this.ws.addEventListener('message', (e) => {
+      if (this.done) return
       let msg: ServerMsg
       try {
         msg = JSON.parse(String(e.data)) as ServerMsg
       } catch {
         return
       }
-      if (msg.t === 'queued') handlers.queued(msg.waiting)
+      if (msg.t === 'queued') {
+        clearTimeout(this.connectTimer)
+        handlers.queued(msg.waiting)
+      }
       if (msg.t === 'matched') {
-        this.done = true
-        this.ws.close()
+        this.close()
         handlers.matched(msg.code)
       }
     })
     this.ws.addEventListener('close', () => {
-      if (!this.done) handlers.failed()
+      if (this.done) return
+      this.close()
+      handlers.failed()
     })
   }
 
   close(): void {
     this.done = true
+    clearTimeout(this.connectTimer)
     this.ws.close()
   }
 }

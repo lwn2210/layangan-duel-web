@@ -220,6 +220,8 @@ export class App {
   private joinRoom(code: string): void {
     this.leaveOnline()
     this.pending = new OnlineGame(code, this.name, (s) => this.onNetStatus(s))
+    // The constructor's synchronous status arrives before pending is assigned.
+    this.onNetStatus({ kind: 'connecting' })
   }
 
   private findMatch(): void {
@@ -233,7 +235,11 @@ export class App {
         this.fromQueue = true
         this.joinRoom(code)
       },
-      failed: () => this.lobby('Gagal nyambung', 'Server multiplayer nggak bisa dihubungi.', { bot: true }),
+      failed: () => {
+        this.queue = null
+        clearTimeout(this.queueTimer)
+        this.lobby('Gagal nyambung', 'Server multiplayer nggak bisa dihubungi.', { bot: true })
+      },
     })
     // Nobody around? Offer the bot rather than an endless wait.
     this.queueTimer = window.setTimeout(() => ($('lobby-bot').hidden = false), 20000)
